@@ -22,7 +22,7 @@ df["stormCode"] = df["storm_start_time"].dt.strftime("%Y%m%d%H%M")
 df["year"] = df["stormCode"].str[:4].astype(int)
 
 df = df[
-    (df["year"] >= 1978) &     # for current chage these to 2005 and 2023
+    (df["year"] >= 1978) &     
     (df["year"] <= 2004)
 ].reset_index(drop=True)
 
