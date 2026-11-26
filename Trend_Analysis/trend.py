@@ -2,7 +2,7 @@ mport pandas as pd
 import pymannkendall as mk
 
 # File paths
-path = "/shared/stormcenter/habiba/Eversource_Snowstorms/final/trend_analysis/output/seasonal_summary.csv"
+path = "./seasonal_summary.csv"
 
 df = pd.read_csv(path)
 df = df.sort_values("season").reset_index(drop=True)
