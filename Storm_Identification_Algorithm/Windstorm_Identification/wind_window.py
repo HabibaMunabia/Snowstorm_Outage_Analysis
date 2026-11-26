@@ -1,19 +1,13 @@
 import pandas as pd
 import os
 
-input_csv = "/shared/stormcenter/habiba/Eversource_Snowstorms/final/windstorm_identification/avg_wind_above_10ms.csv"
-output_csv = "/shared/stormcenter/habiba/Eversource_Snowstorms/final/windstorm_identification/wind_event_periods.csv"
+input_csv = "/windstorm_identification/avg_wind_above_10ms.csv"
+output_csv = "/windstorm_identification/wind_event_periods.csv"
 
-# Read threshold-exceedance file
 df = pd.read_csv(input_csv)
-
-# Convert time to datetime
 df["time"] = pd.to_datetime(df["time"])
 
-# Sort by time
 df = df.sort_values("time").reset_index(drop=True)
-
-# Compute gaps between consecutive timestamps
 df["time_diff"] = df["time"].diff()
 
 # Start a new event when the gap is greater than 24 hours
@@ -39,9 +33,5 @@ for _, group in df.groupby("event_id"):
         "end_time": end_time
     })
 
-# Save final event file
 events_df = pd.DataFrame(events).sort_values("start_time")
 events_df.to_csv(output_csv, index=False)
-
-print(events_df)
-print(f"Saved: {output_csv}")
