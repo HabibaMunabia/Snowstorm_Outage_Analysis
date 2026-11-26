@@ -3,23 +3,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from matplotlib.patches import Patch, Rectangle
+import numpy as np
 
+historical_path = "./historical_snowstorm_predictions.csv"
+current_path = "./current_snowstorm_predictions.csv"
 
-# ====================================
-# Input files
-# ====================================
-historical_path = "/shared/stormcenter/habiba/Eversource_Snowstorms/final/LOOCV/output/historical_snowstorm_predictions.csv"
-current_path = "/shared/stormcenter/habiba/Eversource_Snowstorms/final/LOOCV/output/current_snowstorm_predictions.csv"
-
-# ====================================
-# Output folder
-# ====================================
-output_dir = "/shared/stormcenter/habiba/Eversource_Snowstorms/final/trend_analysis/output/"
+output_dir = "./output/"
 os.makedirs(output_dir, exist_ok=True)
 
-# ====================================
-# Read and combine files
-# ====================================
 historical_df = pd.read_csv(historical_path)
 current_df = pd.read_csv(current_path)
 
@@ -28,18 +19,12 @@ print(f"Unique storms in current file: {current_df['storm_id'].nunique()}")
 
 df = pd.concat([historical_df, current_df], ignore_index=True)
 
-# ====================================
-# Create stormCode
-# ====================================
 df["stormCode"] = df["storm_id"].astype(str).str.strip()
 df["stormCode_10"] = df["stormCode"].str[:10]
 
 # Make predicted column numeric
 df["pred_countts"] = pd.to_numeric(df["pred_countts"], errors="coerce")
 
-# ====================================
-# First aggregate by unique storm
-# ====================================
 storm_summary = (
     df.groupby("stormCode_10", as_index=False)
       .agg(
@@ -47,9 +32,6 @@ storm_summary = (
       )
 )
 
-# ====================================
-# Extract datetime from stormCode
-# ====================================
 storm_summary["datetime"] = pd.to_datetime(
     storm_summary["stormCode_10"],
     format="%Y%m%d%H",
@@ -61,9 +43,7 @@ storm_summary = storm_summary.dropna(subset=["datetime"]).copy()
 storm_summary["year"] = storm_summary["datetime"].dt.year
 storm_summary["month"] = storm_summary["datetime"].dt.month
 
-# ====================================
 # Create Oct-Apr winter season
-# ====================================
 def get_season(row):
     year = row["year"]
     month = row["month"]
@@ -80,9 +60,6 @@ storm_summary["season"] = storm_summary.apply(get_season, axis=1)
 # Keep only Oct-Apr storms
 storm_summary = storm_summary[storm_summary["season"].notna()].copy()
 
-# ====================================
-# Keep selected season range
-# ====================================
 start_season = "1979-1980"
 end_season = "2022-2023"
 
@@ -91,9 +68,6 @@ storm_summary = storm_summary[
     (storm_summary["season"] <= end_season)
 ].copy()
 
-# ====================================
-# Seasonal summary
-# ====================================
 seasonal_summary = (
     storm_summary.groupby("season", as_index=False)
       .agg(
@@ -118,16 +92,6 @@ seasonal_summary["predicted_target"] = (
 output_csv = os.path.join(output_dir, "seasonal_summary.csv")
 seasonal_summary.to_csv(output_csv, index=False)
 
-print(seasonal_summary)
-print(f"Saved seasonal summary: {output_csv}")
-
-
-import numpy as np
-
-# ====================================
-# Mann-Kendall trend parameters
-# ====================================
-
 # Number of storms
 storm_slope = 0.07692307692307693
 storm_intercept = 9.346153846153847
@@ -143,17 +107,8 @@ x = np.arange(len(seasonal_summary))
 storm_trend = storm_slope * x + storm_intercept
 outage_trend = outage_slope * x + outage_intercept
 
-
-# ====================================
-# Plot 1: Number of storms + predicted outages
-# With Mann-Kendall / Sen's slope trends
-# ====================================
-
 fig, ax1 = plt.subplots(figsize=(18, 7))
 
-# ------------------------------------
-# Number of storms (bars)
-# ------------------------------------
 ax1.bar(
     seasonal_summary["season"],
     seasonal_summary["n_storms"],
@@ -162,9 +117,6 @@ ax1.bar(
     label="Number of Storms"
 )
 
-# ------------------------------------
-# Sen's slope trend: Number of storms
-# ------------------------------------
 ax1.plot(
     seasonal_summary["season"],
     storm_trend,
@@ -182,9 +134,6 @@ ax1.tick_params(axis="y", labelsize=16)
 
 ax1.yaxis.set_major_locator(MaxNLocator(integer=True))
 
-# ------------------------------------
-# Predicted outages (line)
-# ------------------------------------
 ax2 = ax1.twinx()
 
 ax2.plot(
@@ -196,9 +145,6 @@ ax2.plot(
     label="Predicted Outages"
 )
 
-# ------------------------------------
-# Sen's slope trend: Predicted outages
-# ------------------------------------
 ax2.plot(
     seasonal_summary["season"],
     outage_trend,
@@ -210,10 +156,6 @@ ax2.plot(
 
 ax2.set_ylabel("Predicted Outages", fontsize=18, labelpad=12)
 ax2.tick_params(axis="y", labelsize=16)
-
-# ------------------------------------
-# Combined legend
-# ------------------------------------
 lines1, labels1 = ax1.get_legend_handles_labels()
 lines2, labels2 = ax2.get_legend_handles_labels()
 
@@ -225,9 +167,6 @@ ax2.legend(
     frameon=True
 )
 
-# ------------------------------------
-# Border around entire figure
-# ------------------------------------
 border = Rectangle(
     (0.005, 0.005),
     0.99,
@@ -243,9 +182,6 @@ fig.add_artist(border)
 
 plt.tight_layout()
 
-# ------------------------------------
-# Save PDF
-# ------------------------------------
 output_plot1 = os.path.join(
     output_dir,
     "seasonal_total_predicted.pdf"
@@ -261,9 +197,6 @@ plt.close()
 
 print(f"Saved plot: {output_plot1}")
 
-# ====================================
-# Plot 2: average predicted per storm
-# ====================================
 plt.figure(figsize=(18, 7))
 
 plt.plot(
@@ -283,5 +216,3 @@ plt.tight_layout()
 output_plot2 = os.path.join(output_dir, "seasonal_average_strength.png")
 plt.savefig(output_plot2, dpi=300, bbox_inches="tight")
 plt.close()
-
-print(f"Saved plot: {output_plot2}")
