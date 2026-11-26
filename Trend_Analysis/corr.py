@@ -2,11 +2,10 @@ import pandas as pd
 
 from scipy.stats import pearsonr, spearmanr
 
-# Read CSV files
 
-sst_df = pd.read_csv("/shared/stormcenter/habiba/Eversource_Snowstorms/final/trend_analysis/winter_season_average_pdo.csv")
+sst_df = pd.read_csv("./trend_analysis/winter_season_average_pdo.csv")
 
-outage_df = pd.read_csv("/shared/stormcenter/habiba/Eversource_Snowstorms/final/trend_analysis/output/seasonal_summary.csv")
+outage_df = pd.read_csv("./seasonal_summary.csv")
 
 
 # Merge by Season
@@ -53,14 +52,10 @@ corr_df = pd.DataFrame(results)
 
 for _, row in corr_df.iterrows():
 
-    print("\n===================================")
-    print(f"Target: {row['Target_Column']}")
-    print("===================================")
-
     print(f"Pearson Correlation : {row['Pearson_Correlation']:.4f}")
     print(f"Pearson p-value     : {row['Pearson_p_value']:.4f}")
 
     print(f"Spearman Correlation: {row['Spearman_Correlation']:.4f}")
     print(f"Spearman p-value    : {row['Spearman_p_value']:.4f}")
 
-#corr_df.to_csv("/shared/stormcenter/habiba/Eversource_Snowstorms/final/trend_analysis/correlation_results_amo.csv", index=False)
+#corr_df.to_csv("./correlation_results_amo.csv", index=False)
