@@ -5,20 +5,15 @@ import pandas as pd
 import glob
 import os
 
-# ---------- paths ----------
-data_dir = "/shared/stormcenter/habiba/Eversource_Snowstorms/final/era5_weather/historical/sn/"
-out_csv  = "/shared/stormcenter/habiba/Eversource_Snowstorms/final/snowstorm_identification/output/snow_periods_historical.csv"
+data_dir = "/era5_weather/historical/sn/"
+out_csv  = "/snowstorm_identification/output/snow_periods_historical.csv"
 os.makedirs(os.path.dirname(out_csv), exist_ok=True)
-
-
-# ---------- settings ----------
 lat_min, lat_max = 41, 44.0
 lon_min, lon_max = -73.5, -70.0
 
 snow_var = "ETC_sn"
 snow_thresh = 0.05       
 grid_thresh = 80        
-# ---------- read files & build one time series ----------
 file_list = sorted(glob.glob(os.path.join(data_dir, "*.nc")))
 print(f"Found {len(file_list)} files")
 
@@ -60,10 +55,8 @@ if len(series_list) == 0:
 
 s_all = pd.concat(series_list).sort_index()
 
-# if duplicate timestamps exist across files, keep the maximum (safer for '>=75 grids' detection)
 s_all = s_all.groupby(s_all.index).max().sort_index()
 
-# ---------- find contiguous periods where grids >= 75 ----------
 flag = s_all >= grid_thresh
 group_id = flag.ne(flag.shift()).cumsum()
 
@@ -90,8 +83,7 @@ for _, idx in flag.groupby(group_id).groups.items():
 
 df = pd.DataFrame(rows).sort_values("snow_start_time")
 
-
-# --- combine storms if storm1 end time-storm2 start time < 12 hours ---
+#combine storms if storm1 end time-storm2 start time < 12 hours 
 df = df.sort_values("snow_start_time").reset_index(drop=True)
 window = pd.Timedelta(hours=12)
 
@@ -119,17 +111,12 @@ if not df.empty:
     merged.append(finalize(start, end))
 
 df = pd.DataFrame(merged)
-
-
-# --- drop storms with duration of <3 hours ---
+# drop storms with duration of <3 hours 
 df["snow_start_time"] = pd.to_datetime(df["snow_start_time"])
 df["snow_end_time"]   = pd.to_datetime(df["snow_end_time"])
 
 duration_hours = (df["snow_end_time"] - df["snow_start_time"]).dt.total_seconds() / 3600.0
 df = df[duration_hours >= 3].reset_index(drop=True)
-
-
-
 
 df.to_csv(out_csv, index=False)
 print(f"Saved {len(df)} periods to: {out_csv}")
