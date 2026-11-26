@@ -3,8 +3,8 @@ import pandas as pd
 import glob
 import os
 
-data_dir = "/shared/stormcenter/habiba/Eversource_Snowstorms/final/era5_weather/current/wind/"
-out_dir = "/shared/stormcenter/habiba/Eversource_Snowstorms/final/windstorm_identification/"
+data_dir = "/era5_weather/current/wind/"
+out_dir = "/windstorm_identification/"
 os.makedirs(out_dir, exist_ok=True)
 
 file_list = sorted(glob.glob(os.path.join(data_dir, "*.nc")))
@@ -31,21 +31,15 @@ for f in file_list:
     avg_wind = avg_wind.sel(
         time=avg_wind["time"].dt.month.isin([12, 1, 2, 3, 4])
     )
-
-    # Convert to dataframe
     df = avg_wind.to_dataframe(name="avg_wind").reset_index()
-
-    # Keep only values above threshold
     df = df[df["avg_wind"] > threshold]
 
-    # Keep only required columns
     df = df[["time", "avg_wind"]]
 
     all_data.append(df)
 
     ds.close()
 
-# Combine all files
 if all_data:
     result = pd.concat(all_data).sort_values("time")
 
